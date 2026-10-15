@@ -1,0 +1,32 @@
+# Secrets and local environment - never commit
+.env
+.env.local
+.env.*.local
+.aws/
+*.pem
+*.key
+
+# OpenRig runtime projections and harness output - generated, not source.
+# See $OPENRIG_HOME/reference/project-workspace.md: these are ownership
+# receipts and skill loadouts, and product repositories should ignore them.
+.openrig/
+.agents/
+.claude/
+.codex/
+
+# Dependencies and build output
+node_modules/
+.npm-cache/
+.next/
+dist/
+build/
+
+# Local database
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
+# OS / editor noise
+.DS_Store
+*.log

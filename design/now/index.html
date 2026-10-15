@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direction 2 — Now</title>
+<style>
+  :root{
+    --bg:#e9ecf2; --ink:#f2f5fa; --dim:#9aa6bd;
+    --surface:#141a26; --surface2:#1c2434; --line:#2a3446;
+    --accent:#4cc2ff; --warm:#ffb454; --green:#3ddc97; --pink:#ff7ab6;
+    --frame:#0d1119;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+       background:var(--bg); color:#1a1d24; min-height:100vh; padding-bottom:80px;}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;}
+  input,textarea{font:inherit;color:inherit;}
+
+  .chrome{max-width:1400px;margin:0 auto;padding:28px 24px 0;}
+  .chrome h1{margin:0 0 6px;font-size:22px;letter-spacing:-.02em;}
+  .chrome .thesis{max-width:780px;font-size:14px;line-height:1.55;color:#454b57;margin:0 0 18px;}
+  .chrome .thesis b{color:#15171c;}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;}
+  .seg{display:inline-flex;background:#dfe3ea;border-radius:9px;padding:3px;}
+  .seg button{padding:7px 14px;border-radius:7px;font-size:13px;font-weight:600;color:#565d6b;}
+  .seg button[aria-pressed="true"]{background:#fff;color:#15171c;box-shadow:0 1px 2px rgba(0,0,0,.12);}
+  .play{margin-left:auto;padding:9px 16px;border-radius:9px;background:#111827;color:#fff;
+        font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(17,24,39,.3);}
+  .play:disabled{background:#9aa4c4;box-shadow:none;}
+  .hint{font-size:12px;color:#767d8c;margin:10px 0 0;max-width:900px;line-height:1.55;}
+  .stage{display:flex;gap:26px;justify-content:center;align-items:flex-start;flex-wrap:wrap;padding:24px 24px 0;}
+
+  .frame{overflow:hidden;position:relative;}
+  .frame.phone{width:390px;height:812px;border-radius:38px;border:9px solid #10141c;
+                box-shadow:0 30px 70px rgba(15,20,35,.32);}
+  .frame.desktop{width:1180px;height:760px;border-radius:12px;border:1px solid #232a38;
+                box-shadow:0 24px 60px rgba(15,20,35,.24);}
+  .frame-label{text-align:center;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+               color:#8b91a0;margin:10px 0 0;font-weight:700;}
+  body[data-view="phone"] .desktopwrap{display:none;}
+  body[data-view="desktop"] .phonewrap{display:none;}
+
+  /* ---------- mobile app ---------- */
+  .app{height:100%;display:flex;flex-direction:column;background:var(--frame);color:var(--ink);}
+  .statusbar{height:26px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;
+             font-size:11px;font-weight:600;background:var(--frame);}
+  .top{padding:8px 18px 14px;border-bottom:1px solid var(--line);}
+  .top .row{display:flex;justify-content:space-between;align-items:center;}
+  .top h2{margin:0;font-size:20px;letter-spacing:-.02em;}
+  .top .d{font-size:12px;color:var(--dim);margin-top:2px;}
+  .ring{width:44px;height:44px;flex:none;}
+  .ring circle{fill:none;stroke-width:3.5;transform:rotate(-90deg);transform-origin:50% 50%;
+               transition:stroke-dashoffset .6s cubic-bezier(.2,.9,.3,1);}
+  .ring .bg{stroke:var(--line);}
+  .ring .fg{stroke:var(--green);stroke-linecap:round;}
+  .ring text{fill:var(--ink);font-size:13px;font-weight:700;transform:rotate(90deg);transform-origin:50% 50%;
+             text-anchor:middle;dominant-baseline:central;}
+  .gridwrap{flex:1;overflow-y:auto;position:relative;padding:0 0 132px;
+            background:linear-gradient(180deg,#111827 0%, #0d1119 38%, #0d1119 100%);}
+  .grid{position:relative;padding-left:56px;}
+  .hourrow{position:relative;height:60px;border-top:1px solid #1a2130;}
+  .hourrow .lab{position:absolute;left:8px;top:2px;font-size:11px;color:#5d6a80;font-weight:600;width:40px;
+                text-align:right;}
+  .hourrow.hot{background:rgba(76,194,255,.055);}
+  .blocks{position:absolute;left:56px;right:12px;top:0;bottom:0;pointer-events:none;}
+  .block{position:absolute;left:0;right:0;border-radius:10px;padding:7px 10px 7px 34px;pointer-events:auto;
+         overflow:hidden;animation:slidein .3s cubic-bezier(.2,.9,.3,1) both;
+         background:linear-gradient(90deg, rgba(76,194,255,.20), rgba(76,194,255,.09));
+         border-left:3px solid var(--accent);}
+  @keyframes slidein{from{opacity:0;transform:translateX(14px);} to{opacity:1;transform:none;}}
+  .block.c1{background:linear-gradient(90deg, rgba(255,180,84,.20), rgba(255,180,84,.08)); border-left-color:var(--warm);}
+  .block.c2{background:linear-gradient(90deg, rgba(61,220,151,.18), rgba(61,220,151,.07)); border-left-color:var(--green);}
+  .block.c3{background:linear-gradient(90deg, rgba(255,122,182,.18), rgba(255,122,182,.07)); border-left-color:var(--pink);}
+  .block .t{font-size:13px;font-weight:600;line-height:1.28;letter-spacing:-.005em;}
+  .block .m{font-size:10.5px;color:var(--dim);margin-top:1px;}
+  .block .dot{position:absolute;left:8px;top:9px;width:19px;height:19px;border-radius:50%;
+              border:2px solid rgba(255,255,255,.28);display:grid;place-items:center;color:transparent;
+              cursor:pointer;}
+  .block .dot::before{content:"";position:absolute;inset:-12px;border-radius:50%;}
+  .block .dot svg{width:10px;height:10px;}
+  .block.done{background:rgba(61,220,151,.10);border-left-color:var(--green);}
+  .block.done .t{color:#6f7f95;text-decoration:line-through;}
+  .block.done .dot{background:var(--green);border-color:var(--green);color:#08130d;}
+  .block.done{animation:none;}
+  .block.leaving{transition:height .3s, opacity .3s, transform .3s;opacity:0;transform:translateX(20px);}
+  .nowline{position:absolute;left:0;right:0;height:0;border-top:1.5px solid var(--pink);z-index:3;
+           pointer-events:none;}
+  .nowline i{position:absolute;left:44px;top:-5px;width:9px;height:9px;border-radius:50%;background:var(--pink);}
+  .nowline b{position:absolute;left:8px;top:-8px;font-size:10px;color:var(--pink);font-weight:700;}
+  .nowlabel{position:absolute;right:14px;top:-22px;background:var(--pink);color:#1a0512;font-size:9.5px;
+            font-weight:800;padding:1px 6px;border-radius:5px;letter-spacing:.03em;}
+  .tray{position:absolute;left:0;right:0;bottom:0;background:rgba(20,26,38,.97);backdrop-filter:blur(10px);
+        border-top:1px solid var(--line);padding:10px 14px 14px;z-index:4;
+        box-shadow:0 -8px 24px rgba(0,0,0,.4);}
+  .tray .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .tray .hd span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:700;}
+  .tray .hd b{color:var(--accent);font-size:11px;}
+  .trayitems{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;}
+  .pill{flex:none;max-width:180px;background:var(--surface2);border:1px solid var(--line);border-radius:16px;
+        padding:7px 11px;font-size:12px;line-height:1.3;display:flex;align-items:center;gap:7px;
+        animation:slidein .3s both;}
+  .pill button{color:var(--accent);font-size:11px;font-weight:800;background:rgba(76,194,255,.12);
+               border-radius:5px;padding:2px 6px;}
+  .pill .txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .trayempty{font-size:12px;color:#5d6a80;padding:6px 2px;}
+  .fab{position:absolute;right:16px;bottom:118px;width:54px;height:54px;border-radius:50%;
+       background:var(--accent);color:#06121b;display:grid;place-items:center;font-size:27px;z-index:6;
+       box-shadow:0 6px 20px rgba(76,194,255,.4);}
+  .fab:active{transform:scale(.93);}
+  .fab{font-size:27px;}
+  .fab svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;}
+
+  .scrim{position:absolute;inset:0;background:rgba(5,8,14,.6);z-index:9;opacity:0;pointer-events:none;
+         transition:opacity .22s;}
+  .scrim.show{opacity:1;pointer-events:auto;}
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:10;background:var(--surface);
+         border-radius:22px 22px 0 0;padding:8px 18px 22px;transform:translateY(102%);
+         transition:transform .3s cubic-bezier(.2,.9,.3,1);border-top:1px solid var(--line);}
+  .sheet.show{transform:none;}
+  .grab{width:38px;height:4px;border-radius:2px;background:#33405a;margin:6px auto 12px;}
+  .sheet h3{margin:0 0 10px;font-size:16px;}
+  .sheet .when{font-size:11.5px;color:var(--accent);margin:0 0 8px;font-weight:700;letter-spacing:.03em;
+               text-transform:uppercase;}
+  .sheet input{width:100%;padding:12px;border-radius:11px;background:var(--frame);border:1.5px solid var(--line);
+               color:var(--ink);font-size:16px;outline:none;}
+  .sheet input:focus{border-color:var(--accent);}
+  .sheet .chips{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;}
+  .sheet .chips button{padding:6px 11px;border-radius:16px;background:var(--surface2);font-size:12px;
+                       color:var(--dim);font-weight:600;}
+  .sheet .save{margin-top:13px;width:100%;padding:13px;border-radius:11px;background:var(--accent);
+               color:#06121b;font-weight:800;font-size:15px;}
+  .sheet .hintline{font-size:11px;color:var(--dim);margin-top:9px;text-align:center;}
+  .toast{position:absolute;left:50%;bottom:186px;transform:translate(-50%,14px);z-index:20;background:var(--green);
+         color:#06180f;padding:9px 15px;border-radius:20px;font-size:12.5px;font-weight:700;opacity:0;
+         transition:.25s;pointer-events:none;white-space:nowrap;}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+
+  /* ---------- desktop ---------- */
+  .desk{display:flex;height:100%;background:var(--surface);color:var(--ink);}
+  .drail{width:190px;flex:none;border-right:1px solid var(--line);padding:22px 14px;display:flex;
+         flex-direction:column;background:var(--frame);}
+  .drail .brand{font-size:16px;font-weight:800;letter-spacing:-.02em;padding:0 8px 4px;}
+  .drail .brand em{color:var(--accent);font-style:normal;}
+  .drail .sub{font-size:11px;color:var(--dim);padding:0 8px 20px;}
+  .drail .day{padding:9px 8px;border-radius:9px;margin-bottom:2px;cursor:pointer;}
+  .drail .day[aria-selected="true"]{background:var(--surface2);}
+  .drail .day .d1{font-size:13.5px;font-weight:700;}
+  .drail .day .d2{font-size:11px;color:var(--dim);margin-top:2px;}
+  .drail .day[aria-selected="true"] .d2{color:var(--accent);}
+  .drail .spacer{flex:1;}
+  .drail .note{font-size:10.5px;color:#5d6a80;padding:10px 8px;border-top:1px solid var(--line);line-height:1.5;}
+  .dmain{flex:1;display:flex;min-width:0;}
+  .daycols{flex:1;display:flex;min-width:0;border-right:1px solid var(--line);}
+  .daycol{flex:1;min-width:0;display:flex;flex-direction:column;border-right:1px solid #1c2434;}
+  .daycol:last-child{border-right:0;}
+  .daycol .hd{padding:16px 16px 10px;}
+  .daycol .hd h3{margin:0;font-size:14px;letter-spacing:-.01em;}
+  .daycol .hd p{margin:2px 0 0;font-size:11px;color:var(--dim);}
+  .daygrid{flex:1;overflow-y:auto;padding:0 14px 20px;position:relative;}
+  .drow{position:relative;height:44px;border-top:1px solid #1a2130;}
+  .drow .lab{position:absolute;left:0;top:2px;font-size:10px;color:#5d6a80;font-weight:600;width:30px;}
+  .dblocks{position:absolute;left:36px;right:0;top:0;bottom:0;}
+  .dblock{position:absolute;left:0;right:0;border-radius:7px;padding:5px 8px 5px 26px;overflow:hidden;
+          background:rgba(76,194,255,.16);border-left:3px solid var(--accent);animation:slidein .3s both;}
+  .dblock.c1{background:rgba(255,180,84,.14);border-left-color:var(--warm);}
+  .dblock.c2{background:rgba(61,220,151,.14);border-left-color:var(--green);}
+  .dblock.c3{background:rgba(255,122,182,.14);border-left-color:var(--pink);}
+  .dblock .t{font-size:11.5px;font-weight:600;line-height:1.25;}
+  .dblock .dot{position:absolute;left:5px;top:5px;width:15px;height:15px;border-radius:50%;
+               border:1.5px solid rgba(255,255,255,.28);display:grid;place-items:center;color:transparent;}
+  .dblock .dot svg{width:8px;height:8px;}
+  .dblock.done{background:rgba(61,220,151,.09);}
+  .dblock.done .t{color:#6f7f95;text-decoration:line-through;}
+  .dblock.done .dot{background:var(--green);border-color:var(--green);color:#08130d;}
+  .dnow{position:absolute;left:0;right:0;border-top:1.5px solid var(--pink);z-index:3;pointer-events:none;}
+  .trayd{width:320px;flex:none;padding:20px 18px;overflow-y:auto;background:var(--frame);}
+  .trayd h3{margin:0;font-size:13px;}
+  .trayd p{margin:3px 0 14px;font-size:11px;color:var(--dim);line-height:1.5;}
+  .titem{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin-bottom:8px;
+         animation:slidein .3s both;}
+  .titem .t{font-size:13px;font-weight:600;line-height:1.35;}
+  .titem .row{display:flex;gap:6px;margin-top:9px;}
+  .titem .row button{flex:1;padding:6px 0;border-radius:7px;background:#26324a;font-size:11px;font-weight:700;
+                      color:var(--dim);}
+  .titem .row button:hover{background:#2f3d59;color:var(--accent);}
+  .tempty{font-size:12px;color:#5d6a80;padding:24px 4px;text-align:center;line-height:1.6;}
+  .summary{margin-top:22px;border-top:1px solid var(--line);padding-top:14px;}
+  .summary .k{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
+  .summary .v{font-size:26px;font-weight:800;letter-spacing:-.03em;margin-top:2px;}
+</style>
+</head>
+<body data-view="both">
+
+<div class="chrome">
+  <h1>Direction 2 — Now</h1>
+  <p class="thesis"><b>Thesis:</b> a task manager is the day you are currently having, drawn as a clock you carry —
+  anything not placed in time is not a task yet, it is a wish. It optimises for answering “what am I doing right now”
+  in under a second and for ending the day with a visible, closed day — and at the expense of every open loop that has
+  no natural time: those get pushed into a tray and, honestly, ignored.</p>
+  <div class="controls">
+    <div class="seg" id="viewseg">
+      <button data-view="phone" aria-pressed="false">Phone</button>
+      <button data-view="desktop" aria-pressed="false">Desktop</button>
+      <button data-view="both" aria-pressed="true">Both</button>
+    </div>
+    <button class="play" id="play">▶ Play the 3 flows</button>
+  </div>
+  <p class="hint">The clock is the structure: tap any empty hour on the phone to put something there, tap the dot on a
+  block to close it out. The phone carries one day plus an unscheduled tray; the laptop puts two days side by side
+  and turns the tray into buttons. Both views share the same state.</p>
+</div>
+
+<div class="stage">
+  <div class="framewrap phonewrap">
+    <div class="frame phone"><div class="app" id="phone"></div></div>
+    <p class="frame-label">390 × 812 — phone browser</p>
+  </div>
+  <div class="framewrap desktopwrap">
+    <div class="frame desktop"><div class="desk" id="desktop"></div></div>
+    <p class="frame-label">1180 × 760 — laptop browser</p>
+  </div>
+</div>
+
+<script>
+const START = 7, END = 23, PX = 60, DPX = 44;
+let uid = 60;
+const DAY = 1; // today
+const DAY2 = 2; // tomorrow
+
+const store = {
+  view:"both", sheet:false, draft:"", pending:{ day:DAY, hour:9, forced:null }, toast:"",
+  blocks:[
+    { id:1, day:DAY, start:8,  dur:1, text:"Review the lease draft", c:0, done:false },
+    { id:2, day:DAY, start:9.5,dur:1, text:"Deep work: expense form", c:0, done:false },
+    { id:3, day:DAY, start:12, dur:1, text:"Lunch — Ana, the new place", c:1, done:false },
+    { id:4, day:DAY, start:14, dur:2, text:"Dentist, 6 month check-up", c:2, done:false },
+    { id:5, day:DAY, start:17, dur:1, text:"Call the bank about the transfer", c:3, done:false },
+    { id:6, day:DAY, start:19, dur:1.5, text:"Cycle to the river", c:1, done:false },
+    { id:7, day:DAY, start:7,  dur:0.5, text:"Meds", c:2, done:true },
+    { id:8, day:DAY, start:9, dur:0.5, text:"Water the plants", c:2, done:true },
+    { id:9, day:DAY2,start:9,  dur:1, text:"Dentist follow-up if needed", c:0, done:false },
+    { id:10,day:DAY2,start:11, dur:1.5,text:"Reply to Marta", c:0, done:false },
+    { id:11,day:DAY2,start:15, dur:2, text:"Quarterly tax paperwork", c:3, done:false }
+  ],
+  tray:[
+    { id:20, text:"Reply to Marta about the apartment viewing" },
+    { id:21, text:"Cancel the second monitor order" },
+    { id:22, text:"Find the passport photo from March" },
+    { id:23, text:"Renew the bike insurance" },
+    { id:24, text:"Read the two articles Sam sent" }
+  ]
+};
+const NOW = 9.75; // 09:45 — where the now-line sits
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const fmt = h => { const H = Math.floor(h), M = Math.round((h-H)*60);
+                   return String(H).padStart(2,"0") + ":" + String(M).padStart(2,"0"); };
+const CK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function dayBlocks(day){ return store.blocks.filter(b => b.day === day).sort((a,b) => a.start - b.start); }
+function stats(day){
+  const bs = dayBlocks(day); const done = bs.filter(b => b.done).length;
+  return { total: bs.length, done, pct: bs.length ? Math.round(done / bs.length * 100) : 0 };
+}
+function nextFree(day){
+  const bs = dayBlocks(day).filter(b => !b.done);
+  let h = Math.ceil(NOW*2)/2;
+  const clash = s => bs.some(b => s < b.start + b.dur && s + 0.5 > b.start);
+  for (let i = 0; i < 24 && h < END; i++, h += 0.5){ if (!clash(h)) return h; }
+  return 20;
+}
+function toast(m){ store.toast = m; render(); sleep(1500).then(() => { if (store.toast === m){ store.toast = ""; render(); } }); }
+
+function addBlock(text, day, start, c){
+  store.blocks.push({ id: uid++, day, start, dur:1, text, c: c ?? (uid % 4), done:false });
+}
+function completeBlock(id, host){
+  const b = store.blocks.find(x => x.id === id); if (!b) return;
+  const el = host.querySelector('[data-block="'+id+'"]');
+  if (el) el.classList.add("done");
+  sleep(420).then(() => {
+    b.done = true; render();
+    const s = stats(b.day);
+    toast(`${b.text.slice(0,22)}${b.text.length>22?"…":""} — ${s.done}/${s.total} today`);
+  });
+}
+
+/* ---------------- capture sheet ---------------- */
+function sheetHTML(){
+  const p = store.pending;
+  return `<div class="scrim${store.sheetOpen?" show":""}" data-act="close"></div>
+  <div class="sheet${store.sheetOpen?" show":""}">
+    <div class="grab"></div>
+    <div class="when">${p.day === DAY2 ? "Tomorrow" : "Today"} · ${fmt(p.hour)}</div>
+    <h3>What happens here?</h3>
+    <input id="q" placeholder="Quarterly tax paperwork" value="${esc(store.draft)}">
+    <div class="chips">
+      <button data-act="chip" data-min="30">30 min</button>
+      <button data-act="chip" data-min="60">1 hour</button>
+      <button data-act="chip" data-min="120">2 hours</button>
+      <button data-act="chip" data-day="2">Tomorrow instead</button>
+    </div>
+    <button class="save" data-act="save">Put it in the day</button>
+    <div class="hintline">No time in mind? Park it in the tray and decide later — or just write a time in the box.</div>
+  </div>`;
+}
+
+/* ---------------- phone ---------------- */
+function phoneHTML(){
+  const s = stats(DAY);
+  const C = 2 * Math.PI * 17, off = C * (1 - s.pct/100);
+  let hours = "";
+  for (let h = START; h < END; h++){
+    const hot = NOW >= h && NOW < h+1;
+    hours += `<div class="hourrow${hot?" hot":""}" data-act="slot" data-hour="${h}">
+      <div class="lab">${String(h).padStart(2,"0")}:00</div></div>`;
+  }
+  let blocks = "";
+  dayBlocks(DAY).forEach(b => {
+    const top = (b.start - START) * PX, h = Math.max(28, b.dur * PX - 4);
+    blocks += `<div class="block c${b.c}${b.done?" done":""}" data-block="${b.id}"
+        style="top:${top}px;height:${h}px">
+        <span class="dot" data-act="complete" data-id="${b.id}" role="button" aria-label="Close out">${CK}</span>
+        <div class="t">${esc(b.text)}</div>
+        <div class="m">${fmt(b.start)} – ${fmt(b.start + b.dur)}</div>
+      </div>`;
+  });
+  const trayItems = store.tray.length
+    ? store.tray.map(t => `<div class="pill"><span class="txt">${esc(t.text)}</span>
+        <button data-act="sched" data-id="${t.id}">+</button></div>`).join("")
+    : `<div class="trayempty">Tray empty — everything has a place in the day.</div>`;
+
+  return `<div class="statusbar"><span>9:45</span><span>●●● ▲ ▮</span></div>
+    <div class="top">
+      <div class="row">
+        <div>
+          <h2>Today</h2>
+          <div class="d">${s.done} of ${s.total} closed · ${s.pct}% of the day · ${store.tray.length} unscheduled</div>
+        </div>
+        <svg class="ring" viewBox="0 0 44 44">
+          <circle class="bg" cx="22" cy="22" r="17"></circle>
+          <circle class="fg" cx="22" cy="22" r="17" stroke-dasharray="${C}" stroke-dashoffset="${off}"></circle>
+
+        </svg>
+      </div>
+    </div>
+    <div class="gridwrap" id="gridwrap">
+      <div class="grid">${hours}<div class="blocks">${blocks}</div>
+        <div class="nowline" style="top:${(NOW-START)*PX}px">
+          <b>now</b><i></i><span class="nowlabel">${fmt(NOW)}</span>
+        </div>
+      </div>
+    </div>
+    <div class="tray">
+      <div class="hd"><span>Unscheduled</span><b>${store.tray.length} waiting</b></div>
+      <div class="trayitems">${trayItems}</div>
+    </div>
+    <button class="fab" data-act="open" data-hour="${nextFree(DAY)}">+</button>
+    ${sheetHTML()}
+    <div class="toast${store.toast?" show":""}">✓ ${esc(store.toast)}</div>`;
+}
+
+/* ---------------- desktop ---------------- */
+function dayCol(day, title, sub){
+  let rows = "";
+  for (let h = START; h < END; h++) rows += `<div class="drow"><div class="lab">${String(h).padStart(2,"0")}</div></div>`;
+  let blocks = "";
+  dayBlocks(day).forEach(b => {
+    const top = (b.start - START) * DPX, h = Math.max(24, b.dur * DPX - 3);
+    blocks += `<div class="dblock c${b.c}${b.done?" done":""}" data-block="${b.id}" style="top:${top}px;height:${h}px"
+        title="${esc(b.text)}">
+        <span class="dot" data-act="dcomplete" data-id="${b.id}" role="button" aria-label="Close out">${CK}</span><div class="t">${esc(b.text)}</div></div>`;
+  });
+  const s = stats(day);
+  return `<div class="daycol">
+    <div class="hd"><h3>${title}</h3><p>${s.done} of ${s.total} closed · ${sub}</p></div>
+    <div class="daygrid">${rows}<div class="dblocks">${blocks}</div>
+      ${day === DAY ? `<div class="dnow" style="top:${(NOW-START)*DPX}px"><span class="nowlabel"
+        style="position:absolute;right:0;top:-20px;background:var(--pink);color:#1a0512;font-size:9px;
+        font-weight:800;padding:1px 6px;border-radius:5px">NOW ${fmt(NOW)}</span></div>` : ""}
+    </div></div>`;
+}
+function deskHTML(){
+  const s = stats(DAY);
+  const mins = dayBlocks(DAY).reduce((a,b) => a + b.dur, 0);
+  return `<div class="drail">
+      <div class="brand">N<em>o</em>w</div>
+      <div class="sub">the day, drawn</div>
+      <div class="day" aria-selected="true"><div class="d1">Today</div><div class="d2">${s.done}/${s.total} closed</div></div>
+      <div class="day" aria-selected="false"><div class="d1">Tomorrow</div><div class="d2">${stats(DAY2).total} planned</div></div>
+      <div class="spacer"></div>
+      <div class="note">Anything with no time stays in the tray until you give it one. That is the whole rule.</div>
+    </div>
+    <div class="dmain">
+      <div class="daycols">${dayCol(DAY,"Today","Tuesday")}${dayCol(DAY2,"Tomorrow","Wednesday")}</div>
+      <div class="trayd">
+        <h3>Unscheduled</h3>
+        <p>These have no time yet. Give them one, or leave them — the day does not care until you say so.</p>
+        ${store.tray.length ? store.tray.map(t => `<div class="titem"><div class="t">${esc(t.text)}</div>
+            <div class="row">
+              <button data-act="dsched" data-id="${t.id}" data-day="${DAY}">Today ${fmt(nextFree(DAY))}</button>
+              <button data-act="dsched" data-id="${t.id}" data-day="${DAY2}">Tomorrow</button>
+            </div></div>`).join("")
+          : `<div class="tempty">Tray empty.<br>Everything has a time.</div>`}
+        <div class="summary">
+          <div class="k">Scheduled today</div>
+          <div class="v">${mins % 1 === 0 ? mins : mins.toFixed(1)}<span style="font-size:14px;color:var(--dim)"> h of the day scheduled</span></div>
+          <div class="k" style="margin-top:14px">Open loops</div>
+          <div class="v">${store.tray.length}</div>
+        </div>
+      </div>
+    </div>
+    <div class="toast${store.toast?" show":""}" style="bottom:26px">✓ ${esc(store.toast)}</div>`;
+}
+
+function render(){
+  document.getElementById("phone").innerHTML = phoneHTML();
+  document.getElementById("desktop").innerHTML = deskHTML();
+}
+function renderPhone(){ document.getElementById("phone").innerHTML = phoneHTML(); }
+
+document.addEventListener("click", e => {
+  const vb = e.target.closest("#viewseg button");
+  if (vb){ setView(vb.dataset.view); return; }
+  const btn = e.target.closest("[data-act]"); if (!btn) return;
+  const act = btn.dataset.act, id = +btn.dataset.id, host = btn.closest(".frame");
+
+  if (act === "slot" || act === "open"){
+    store.sheetOpen = true; store.draft = "";
+    store.pending = { day: DAY, hour: +(btn.dataset.hour || nextFree(DAY)), forced: null, min: 60 };
+    renderPhone(); setTimeout(() => { const q = document.getElementById("q"); if (q) q.focus(); }, 80);
+  }
+  if (act === "close"){ store.sheetOpen = false; renderPhone(); }
+  if (act === "chip"){
+    if (btn.dataset.min) store.pending.min = +btn.dataset.min;
+    if (btn.dataset.day) store.pending.day = +btn.dataset.day;
+    renderPhone(); setTimeout(() => { const q = document.getElementById("q"); if (q) q.focus(); }, 60);
+  }
+  if (act === "save"){
+    const q = document.getElementById("q"); const raw = q ? q.value.trim() : "";
+    if (raw){
+      const p = store.pending;
+      addBlock(raw, p.day, p.hour, (uid + 1) % 4);
+      const b = store.blocks[store.blocks.length-1]; b.dur = (p.min || 60) / 60;
+      store.sheetOpen = false; render(); toast("Added to " + (p.day === DAY2 ? "tomorrow" : "today") + " at " + fmt(p.hour));
+    }
+  }
+  if (act === "complete") completeBlock(id, host);
+  if (act === "dcomplete"){ const el = btn; el.classList.add("done"); sleep(400).then(() => {
+      const b = store.blocks.find(x => x.id === id); if (b) b.done = true; render(); const s = stats(DAY);
+      toast(`${b?b.text.slice(0,22):""} — ${s.done}/${s.total} today`); }); }
+  if (act === "sched" || act === "dsched"){
+    const t = store.tray.find(x => x.id === id); if (!t) return;
+    const day = act === "dsched" ? +btn.dataset.day : DAY;
+    addBlock(t.text, day, day === DAY ? nextFree(DAY) : 16, (uid) % 4);
+    store.tray = store.tray.filter(x => x.id !== id);
+    render(); toast("Given a time — " + (day === DAY ? "today" : "tomorrow"));
+  }
+});
+document.addEventListener("input", e => { if (e.target.id === "q") store.draft = e.target.value; });
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.id === "q"){ const p = store.pending;
+    if (e.target.value.trim()){ addBlock(e.target.value.trim(), p.day, p.hour, (uid+1)%4);
+      store.blocks[store.blocks.length-1].dur = (p.min||60)/60; store.sheetOpen = false; render();
+      toast("Added to the day"); } }
+  if (e.key === "Escape" && store.sheetOpen){ store.sheetOpen = false; renderPhone(); }
+});
+
+/* ============================ stage fit ============================
+   Phone + desktop side by side do not fit a 1280 laptop unscaled.
+   transform: scale() alone does not shrink the *layout* box, so flex
+   still measures the full widths and wraps to two rows. Shrink the box
+   as well, or the pair never sits side by side. */
+function fitStage(){
+  const stage = document.querySelector(".stage");
+  if (!stage) return;
+  const wraps = [...stage.querySelectorAll(".framewrap")].filter(w => w.offsetParent !== null);
+  wraps.forEach(w => {
+    w.style.transform = ""; w.style.width = ""; w.style.height = "";
+    w.style.marginBottom = ""; w.style.alignItems = "";
+    w.style.minWidth = ""; w.style.flex = "";
+  });
+  if (!wraps.length) return;
+  const gap = 26;
+  const sum = wraps.reduce((a, w) => a + w.getBoundingClientRect().width, 0);
+  const gaps = gap * (wraps.length - 1);
+  const cs = getComputedStyle(stage);
+  const avail = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  // the gaps are NOT scaled, so they must come out of the budget before dividing
+  // (dividing by sum+gaps overshoots by a couple of px and flex wraps).
+  const s = Math.max(0.35, Math.min(1, (avail - gaps) / sum)) * 0.995;
+  if (s > 0.999) return;                       // fits natively — leave it at 1:1
+  wraps.forEach(w => {
+    const r = w.getBoundingClientRect();
+    w.style.width  = (r.width  * s) + "px";    // shrink the layout box...
+    w.style.height = (r.height * s) + "px";
+    w.style.minWidth = "0";                    // min-width:auto would keep the box at min-content
+    w.style.flex = "0 0 auto";
+    w.style.alignItems = "flex-start";
+    w.style.transformOrigin = "top left";
+    w.style.transform = "scale(" + s + ")";     // ...so the visual matches the box exactly
+  });
+}
+
+function setView(v){
+  store.view = v;
+  document.body.dataset.view = v;
+  [...document.querySelectorAll("#viewseg button")].forEach(b => b.setAttribute("aria-pressed", b.dataset.view === v));
+  fitStage();
+}
+window.addEventListener("resize", fitStage);
+
+/* ---------------- scripted demo ---------------- */
+async function typeInto(sel, text){
+  const el = document.querySelector(sel); if (!el) return;
+  let acc = ""; for (const ch of text){ acc += ch; el.value = acc;
+    el.dispatchEvent(new Event("input", { bubbles:true })); await sleep(26); }
+}
+async function runDemo(){
+  const play = document.getElementById("play");
+  play.disabled = true; play.textContent = "▶ Running…";
+  await sleep(700);
+
+  // 1. capture straight into the day
+  document.querySelector('#phone [data-act="slot"][data-hour="15"]').click();
+  await sleep(480);
+  await typeInto("#q", "Call the bank about the transfer");
+  await sleep(420);
+  document.querySelector('[data-act="chip"][data-min="30"]').click(); await sleep(300);
+  document.querySelector('[data-act="save"]').click();
+  await sleep(900);
+
+  // 2. a tray item gets a time — the open loop closes
+  const tray = document.querySelector('#phone .pill button');
+  if (tray) tray.click();
+  await sleep(900);
+
+  // 3. close out what is next
+  const next = document.querySelector('#phone .block:not(.done) .dot');
+  if (next) next.click();
+  await sleep(1500);
+  play.disabled = false; play.textContent = "▶ Play the 3 flows";
+}
+document.getElementById("play").addEventListener("click", runDemo);
+
+render();
+fitStage();
+window.addEventListener("load", fitStage);
+// a phone-only visit should land on the phone view, not a squeezed pair
+if (window.innerWidth < 760) setView("phone");
+</script>
+</body>
+</html>

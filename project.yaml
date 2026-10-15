@@ -1,0 +1,9 @@
+schema: openrig.project/v0alpha1
+kind: project
+id: tasks
+install:
+  intent: SPEC.md
+  context: []
+  skills: []
+missions:
+  root: missions
