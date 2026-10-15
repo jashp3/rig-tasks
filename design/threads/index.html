@@ -485,9 +485,10 @@ document.getElementById("play").addEventListener("click", runDemo);
 render();
 fitStage();
 window.addEventListener("load", fitStage);
-// Below laptop width there is no room for both frames side by side. Showing the
-// phone view alone beats showing two illegibly shrunk ones.
-if (window.innerWidth < 1200) setView("phone"); else setView("both");
+// No magic width. Start on Both and let the legibility guard in fitStage() decide
+// from the actual geometry — it demotes to the phone view only when two frames
+// would each shrink past legibility. One rule instead of two that can disagree.
+setView("both");
 </script>
 </body>
 </html>

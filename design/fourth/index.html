@@ -568,7 +568,7 @@ function sheetHTML(){
       <button data-act="quick" data-when="" aria-pressed="${store.quick === ""}">No date</button>
     </div>
     <button class="save" data-act="save">Save</button>
-    <div class="hintline">A time is optional. Type one and it is picked up — leave it out and the task still counts.</div>
+    <div class="hintline">Type a day to file it (“dentist tomorrow 4pm”). A time on its own is kept, but the task waits in your inbox — we never guess which day you meant.</div>
   </div>`;
 }
 
@@ -856,9 +856,10 @@ document.getElementById("play").addEventListener("click", runDemo);
 render();
 fitStage();
 window.addEventListener("load", fitStage);
-// Below laptop width there is no room for both frames side by side. Showing the
-// phone view alone beats showing two illegibly shrunk ones.
-if (window.innerWidth < 1200) setView("phone"); else setView("both");
+// No magic width. Start on Both and let the legibility guard in fitStage() decide
+// from the actual geometry — it demotes to the phone view only when two frames
+// would each shrink past legibility. One rule instead of two that can disagree.
+setView("both");
 </script>
 </body>
 </html>
