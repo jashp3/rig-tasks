@@ -37,7 +37,9 @@
                 box-shadow:0 30px 70px rgba(15,20,35,.32);}
   .frame.desktop{width:1180px;height:760px;border-radius:12px;border:1px solid #232a38;
                 box-shadow:0 24px 60px rgba(15,20,35,.24);}
-  .frame-label{text-align:center;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  .framescale{display:block;}
+  .framewrap{display:flex; flex-direction:column; align-items:center;}
+    .frame-label{text-align:center;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
                color:#8b91a0;margin:10px 0 0;font-weight:700;}
   body[data-view="phone"] .desktopwrap{display:none;}
   body[data-view="desktop"] .phonewrap{display:none;}
@@ -189,6 +191,12 @@
   .summary{margin-top:22px;border-top:1px solid var(--line);padding-top:14px;}
   .summary .k{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
   .summary .v{font-size:26px;font-weight:800;letter-spacing:-.03em;margin-top:2px;}
+
+  /* On a phone the owner should land on the app, not on my explanation of it. */
+  @media (max-width:700px){
+    .chrome{padding-top:16px;}
+    .chrome .thesis, .grafts, .hint{display:none;}
+  }
 </style>
 </head>
 <body data-view="both">
@@ -214,12 +222,16 @@
 
 <div class="stage">
   <div class="framewrap phonewrap">
-    <div class="frame phone"><div class="app" id="phone"></div></div>
-    <p class="frame-label">390 × 812 — phone browser</p>
+    <div class="framescale">
+      <div class="frame phone"><div class="app" id="phone"></div></div>
+      <p class="frame-label">390 × 812 — phone browser</p>
+    </div>
   </div>
   <div class="framewrap desktopwrap">
-    <div class="frame desktop"><div class="desk" id="desktop"></div></div>
-    <p class="frame-label">1180 × 760 — laptop browser</p>
+    <div class="framescale">
+      <div class="frame desktop"><div class="desk" id="desktop"></div></div>
+      <p class="frame-label">1180 × 760 — laptop browser</p>
+    </div>
   </div>
 </div>
 
@@ -479,9 +491,10 @@ function fitStage(){
   if (!stage) return;
   const wraps = [...stage.querySelectorAll(".framewrap")].filter(w => w.offsetParent !== null);
   wraps.forEach(w => {
-    w.style.transform = ""; w.style.width = ""; w.style.height = "";
-    w.style.marginBottom = ""; w.style.alignItems = "";
-    w.style.minWidth = ""; w.style.flex = "";
+    const inner = w.querySelector(".framescale");
+    if (inner) inner.style.transform = "";
+    w.style.width = ""; w.style.height = "";
+    w.style.alignItems = ""; w.style.minWidth = ""; w.style.flex = "";
   });
   if (!wraps.length) return;
   const gap = 26;
@@ -489,25 +502,24 @@ function fitStage(){
   const gaps = gap * (wraps.length - 1);
   const cs = getComputedStyle(stage);
   const avail = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-  // the gaps are NOT scaled, so they must come out of the budget before dividing
-  // (dividing by sum+gaps overshoots by a couple of px and flex wraps).
   const s = Math.max(0.35, Math.min(1, (avail - gaps) / sum)) * 0.995;
-  // Two frames shrunk past this stop being readable. Showing one usable view beats
-  // showing two illegible ones — on a phone, "Both" is never the right answer.
   if (s < 0.62 && wraps.length > 1 && store.view !== "phone"){ setView("phone"); return; }
-  if (s > 0.999) return;                       // fits natively — leave it at 1:1
+  if (s > 0.999) return;
   wraps.forEach(w => {
+    const inner = w.querySelector(".framescale");
+    if (!inner) return;
     const r = w.getBoundingClientRect();
-    w.style.width  = (r.width  * s) + "px";    // shrink the layout box...
+    // the flex item must MEASURE the scaled width or the row wraps...
+    w.style.width = (r.width * s) + "px";
     w.style.height = (r.height * s) + "px";
-    w.style.minWidth = "0";                    // min-width:auto would keep the box at min-content
+    w.style.minWidth = "0";
     w.style.flex = "0 0 auto";
     w.style.alignItems = "flex-start";
-    w.style.transformOrigin = "top left";
-    w.style.transform = "scale(" + s + ")";     // ...so the visual matches the box exactly
+    // ...and the CONTENT is what gets scaled, otherwise it scales twice.
+    inner.style.transformOrigin = "top left";
+    inner.style.transform = "scale(" + s + ")";
   });
 }
-
 function setView(v){
   store.view = v;
   document.body.dataset.view = v;

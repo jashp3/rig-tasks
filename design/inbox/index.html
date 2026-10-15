@@ -44,6 +44,7 @@
                 box-shadow:0 24px 60px rgba(15,20,35,.16);}
   .frame-label{text-align:center; font-size:11px; letter-spacing:.09em; text-transform:uppercase;
                color:#8b91a0; margin:10px 0 0; font-weight:700;}
+  .framescale{display:block;}
   .framewrap{display:flex; flex-direction:column; align-items:center;}
   body[data-view="phone"] .desktop, body[data-view="phone"] .desktopwrap{display:none;}
   body[data-view="desktop"] .phone, body[data-view="desktop"] .phonewrap{display:none;}
@@ -190,6 +191,12 @@
   .capture-bar .k{font-size:11px; color:var(--muted);}
   .progress{height:5px; background:#eceef3; border-radius:3px; overflow:hidden; margin:10px 0 4px;}
   .progress i{display:block; height:100%; background:var(--done); transition:width .5s cubic-bezier(.2,.9,.3,1);}
+
+  /* On a phone the owner should land on the app, not on my explanation of it. */
+  @media (max-width:700px){
+    .chrome{padding-top:16px;}
+    .chrome .thesis, .grafts, .hint{display:none;}
+  }
 </style>
 </head>
 <body data-view="both">
@@ -215,12 +222,16 @@
 
 <div class="stage">
   <div class="framewrap phonewrap">
-    <div class="frame phone"><div class="app" id="phone"></div></div>
-    <p class="frame-label">390 × 812 — phone browser</p>
+    <div class="framescale">
+      <div class="frame phone"><div class="app" id="phone"></div></div>
+      <p class="frame-label">390 × 812 — phone browser</p>
+    </div>
   </div>
   <div class="framewrap desktopwrap">
-    <div class="frame desktop"><div class="desk" id="desktop"></div></div>
-    <p class="frame-label">1180 × 760 — laptop browser</p>
+    <div class="framescale">
+      <div class="frame desktop"><div class="desk" id="desktop"></div></div>
+      <p class="frame-label">1180 × 760 — laptop browser</p>
+    </div>
   </div>
 </div>
 
@@ -251,7 +262,7 @@ const store = {
   ],
   sheetOpen: false,
   draft: "",
-  quick: null,
+  quick: undefined,
   toast: "",
   confettiAt: null,
   ctxEdit: null,
@@ -282,6 +293,13 @@ function parse(text){
                    .replace(/\s{2,}/g, " ").trim();
   clean = clean.charAt(0).toUpperCase() + clean.slice(1);
   return { when, text: clean || text };
+}
+/* No chip pressed means "trust what was typed"; the explicit "No date"
+   chip means "undated whatever the text says". Without this distinction a typed
+   "tomorrow" was silently thrown away. */
+function forcedFromQuick(){
+  if (store.quick === undefined) return undefined;
+  return store.quick === "" ? null : store.quick;
 }
 function addItem(raw, forcedWhen){
   const p = parse(raw);
@@ -519,7 +537,7 @@ document.addEventListener("click", e => {
   if (!btn) return;
   const act = btn.dataset.act, id = +btn.dataset.id;
   const host = btn.closest(".frame");
-  if (act === "open"){ store.sheetOpen = true; store.draft = ""; store.quick = null; renderPhone();
+  if (act === "open"){ store.sheetOpen = true; store.draft = ""; store.quick = undefined; renderPhone();
                        setTimeout(() => { const ta = document.getElementById("ta"); if (ta) ta.focus(); }, 60); }
   if (act === "close"){ store.sheetOpen = false; renderPhone(); }
   if (act === "quick"){ store.quick = btn.dataset.when === "" ? "" : btn.dataset.when; renderPhone();
@@ -528,8 +546,8 @@ document.addEventListener("click", e => {
     const ta = document.getElementById("ta"), inp = document.getElementById("desk-input");
     const raw = act === "save" ? (ta ? ta.value : "") : (inp ? inp.value : "");
     if (raw.trim()){
-      addItem(raw.trim(), store.quick === "" ? null : store.quick);
-      store.quick = null; store.sheetOpen = false; store.draft = "";
+      addItem(raw.trim(), forcedFromQuick());
+      store.quick = undefined; store.sheetOpen = false; store.draft = "";
       render(); toast("Captured");
     }
   }
@@ -549,8 +567,8 @@ document.addEventListener("input", e => {
 document.addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.dataset && e.target.dataset.ctx){ saveCtx(+e.target.dataset.ctx); return; }
   if (e.key === "Enter" && !e.shiftKey && e.target.id === "desk-input"){
-    if (e.target.value.trim()){ addItem(e.target.value.trim(), store.quick === "" ? null : store.quick);
-      store.quick = null; render(); toast("Captured"); }
+    if (e.target.value.trim()){ addItem(e.target.value.trim(), forcedFromQuick());
+      store.quick = undefined; render(); toast("Captured"); }
   }
   if ((e.key === "n" || e.key === "N") && e.target.id !== "ta"){ store.sheetOpen = true; renderPhone();
     setTimeout(() => { const ta = document.getElementById("ta"); if (ta) ta.focus(); }, 60); }
@@ -567,9 +585,10 @@ function fitStage(){
   if (!stage) return;
   const wraps = [...stage.querySelectorAll(".framewrap")].filter(w => w.offsetParent !== null);
   wraps.forEach(w => {
-    w.style.transform = ""; w.style.width = ""; w.style.height = "";
-    w.style.marginBottom = ""; w.style.alignItems = "";
-    w.style.minWidth = ""; w.style.flex = "";
+    const inner = w.querySelector(".framescale");
+    if (inner) inner.style.transform = "";
+    w.style.width = ""; w.style.height = "";
+    w.style.alignItems = ""; w.style.minWidth = ""; w.style.flex = "";
   });
   if (!wraps.length) return;
   const gap = 26;
@@ -577,25 +596,24 @@ function fitStage(){
   const gaps = gap * (wraps.length - 1);
   const cs = getComputedStyle(stage);
   const avail = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-  // the gaps are NOT scaled, so they must come out of the budget before dividing
-  // (dividing by sum+gaps overshoots by a couple of px and flex wraps).
   const s = Math.max(0.35, Math.min(1, (avail - gaps) / sum)) * 0.995;
-  // Two frames shrunk past this stop being readable. Showing one usable view beats
-  // showing two illegible ones — on a phone, "Both" is never the right answer.
   if (s < 0.62 && wraps.length > 1 && store.view !== "phone"){ setView("phone"); return; }
-  if (s > 0.999) return;                       // fits natively — leave it at 1:1
+  if (s > 0.999) return;
   wraps.forEach(w => {
+    const inner = w.querySelector(".framescale");
+    if (!inner) return;
     const r = w.getBoundingClientRect();
-    w.style.width  = (r.width  * s) + "px";    // shrink the layout box...
+    // the flex item must MEASURE the scaled width or the row wraps...
+    w.style.width = (r.width * s) + "px";
     w.style.height = (r.height * s) + "px";
-    w.style.minWidth = "0";                    // min-width:auto would keep the box at min-content
+    w.style.minWidth = "0";
     w.style.flex = "0 0 auto";
     w.style.alignItems = "flex-start";
-    w.style.transformOrigin = "top left";
-    w.style.transform = "scale(" + s + ")";     // ...so the visual matches the box exactly
+    // ...and the CONTENT is what gets scaled, otherwise it scales twice.
+    inner.style.transformOrigin = "top left";
+    inner.style.transform = "scale(" + s + ")";
   });
 }
-
 function setView(v){
   store.view = v;
   document.body.dataset.view = v;
