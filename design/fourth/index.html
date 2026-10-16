@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Direction 4 — Inbox + the two that survived</title>
+<title>Tasks</title>
 <style>
   :root{
     --bg:#eceef3; --panel:#ffffff; --ink:#15171c; --muted:#6b7280; --line:#e3e6ec;
@@ -104,28 +104,26 @@
   .carried .go{flex:none;padding:8px 13px;border-radius:9px;background:var(--clay);color:#fff;
                font-size:12.5px;font-weight:700;}
 
-  /* the day as a shape — a map of when things are, not how long they take */
-  .daybar-wrap{background:#fbfcfe;border:1px solid var(--line);border-radius:var(--radius);
-               padding:12px 13px 11px;margin-bottom:4px;}
-  .daybar-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px;}
-  .daybar-head .p{font-size:12.5px;font-weight:700;}
-  .daybar-head .s{font-size:11.5px;color:var(--muted);}
-  .daybar{position:relative;height:44px;background:#f2f4f9;border-radius:9px;border:1px solid var(--line);
-          overflow:hidden;}
-  .daybar .hourline{position:absolute;top:0;bottom:0;border-left:1px solid #e8ebf2;}
-  .daybar .hourline.major{border-left-color:#d6dae6;}
-  .daybar .mark{position:absolute;top:10px;bottom:10px;width:9px;margin-left:-4.5px;border-radius:3px;
-                background:var(--accent);cursor:pointer;}
-  .daybar .mark.done{background:#b9c0ce;}
-  .daybar .mark::after{content:"";position:absolute;inset:-10px -12px;}
-  .daybar .nowline{position:absolute;top:0;bottom:0;width:2px;background:var(--clay);margin-left:-1px;}
-  .daybar .nowline::before{content:"";position:absolute;top:-1px;left:-3px;width:8px;height:8px;border-radius:50%;
-                           background:var(--clay);}
-  .lbls{display:flex;justify-content:space-between;margin-top:5px;font-size:9.5px;color:#a3aab8;
-                font-weight:600;}
-  .daybar-foot{margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--muted);
-               display:flex;justify-content:space-between;gap:10px;}
-  .daybar-foot b{color:var(--ink);}
+  /* the day as a vertical run of hours — a map of WHEN things are, never how
+     long they take. No block heights, so nothing here implies a duration, and
+     no now-line, because NOW is still a frozen constant and drawing one would
+     be a clock that does not move. Wiring a real clock is a later slice. */
+  .tl{background:#fbfcfe;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:10px;}
+  .tl-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+           padding:10px 13px 9px;border-bottom:1px solid var(--line);}
+  .tl-head .p{font-size:12.5px;font-weight:700;}
+  .tl-head .s{font-size:11.5px;color:var(--muted);}
+  .tl-hour{display:flex;align-items:stretch;gap:9px;padding-right:10px;min-height:40px;
+           border-top:1px solid #eff1f6;}
+  .tl-hour:first-of-type{border-top:none;}
+  .tl-lab{flex:none;width:44px;padding:8px 0 0;text-align:right;font-size:11px;color:#9aa1ae;
+          font-weight:700;font-variant-numeric:tabular-nums;}
+  .tl-hour.on .tl-lab{color:var(--ink);}
+  .tl-slot{flex:1;min-width:0;padding:5px 0;display:flex;flex-direction:column;gap:5px;}
+  .tl-slot .card{margin-bottom:0;}
+  .tl-blank{height:1px;background:#f2f4f9;margin:9px 0 8px;}
+  .tl-none{margin-top:2px;}
+  .tl-none .tl-note{font-size:11.5px;color:var(--muted);margin:2px 0 8px;}
 
   .tchip{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:16px;
          background:var(--accent-soft);color:#2c46c9;font-size:11.5px;font-weight:700;cursor:pointer;}
@@ -257,21 +255,22 @@
 <body data-view="phone">
 
 <div class="chrome">
-  <h1>Direction 4 — Inbox, plus the two things that survived</h1>
+  <h1>Tasks</h1>
   <p class="thesis"><b>Thesis:</b> still a pressure valve — capture in three seconds, never decide at capture,
-  filing happens later. What changes is the two places plain Inbox was weakest: <b>today</b> now has a visible
-  shape and a closing feeling instead of a flat list, and the inbox no longer quietly rots, because whatever has
-  been waiting longest is pinned where you cannot miss it.</p>
+  filing happens later. What changed is the two places plain Inbox was weakest: <b>today</b> is now the day
+  itself, hour by hour down the page, and the inbox no longer quietly rots, because whatever has been waiting
+  longest is pinned where you cannot miss it.</p>
 
   <div class="grafts">
     <div class="graft kept"><div class="k">Kept — Inbox context field</div>
       “Add what you know”, timestamped lines. This was already in Inbox; it needed nothing.</div>
-    <div class="graft kept"><div class="k">Kept, reduced — from Now</div>
-      An <b>optional</b> time of day, and a day bar that shows <i>when</i> your things are. A map, not a
-      duration — we do not model how long anything takes.</div>
+    <div class="graft kept"><div class="k">Kept, changed — from Now</div>
+      An <b>optional</b> time of day, and the day itself as an <b>hour-by-hour vertical run</b>. A map of
+      <i>when</i> things are, never how long — we do not model duration, so no block heights lie about it.</div>
     <div class="graft cut"><div class="k">Cut — from Now</div>
-      The tray, the hourly grid, and “no time in mind” as a rule. The tray is just Inbox's own tab wearing a
-      different hat.</div>
+      The tray, and “no time in mind” as a rule. The tray is just Inbox’s own tab wearing a different hat.
+      Tap-to-create on the clock is <b>not</b> built: it needs a duration and an auto-placed slot, and both
+      have already been ruled out.</div>
     <div class="graft kept"><div class="k">Kept, adapted — from Threads</div>
       <b>Carried longest</b>: the oldest thing in the inbox is pinned to the top, with how long you have been
       carrying it.</div>
@@ -288,8 +287,9 @@
     <button class="play" id="play">▶ Play the 3 flows</button>
   </div>
   <p class="hint">Times are entirely optional and off by default — filing stays four taps and no clock. Type a
-  time into the capture box (“dentist tomorrow 4pm”) and it is picked up for you. Tap any marker on the day bar
-  to move that task. Press <b>Play the 3 flows</b> to watch it run.</p>
+  time into the capture box (“dentist tomorrow 4pm”) and it is picked up for you. Today then shows the day as
+  hours down the page; a task with no time stays off the clock and says so. Press <b>Play the 3 flows</b> to
+  watch it run.</p>
 </div>
 
 <div class="stage">
@@ -310,7 +310,10 @@
 <script>
 /* ============================ state ============================ */
 const whenLabel = { today:"Today", tomorrow:"Tomorrow", week:"Next week", someday:"Someday" };
-const DBAR_A = 6, DBAR_B = 23, NOW = 9.75;     // day bar spans 06:00–23:00; "now" is 09:45
+/* A real clock is NOT wired. NOW is a frozen literal kept only as the marker
+   for that gap, so nothing renders a "now" line that would never move. Wiring
+   it is a later slice — the timeline deliberately draws no now-line until then. */
+const NOW = 9.75;
 
 let uid = 200;
 const store = {
@@ -338,7 +341,8 @@ const store = {
   ],
   sheetOpen:false, draft:"", quick:undefined, toast:"", confettiAt:null, celebrate:true,
   ctxEdit:null, ctxDraft:"", timeEdit:null, timeDraft:"",
-  deleted:[]
+  deleted:[],
+  dayViews:{}
 };
 
 /* ============================ persistence ============================
@@ -352,7 +356,8 @@ const store = {
 const LS_KEY = "tasks.d4.v1";
 function persist(){
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify({ v:1, uid:uid, items:store.items, deleted:store.deleted }));
+    localStorage.setItem(LS_KEY, JSON.stringify({ v:1, uid:uid, items:store.items, deleted:store.deleted,
+                                                   dayViews:store.dayViews }));
   } catch (e) { /* storage full or refused — the app still works, it just forgets */ }
 }
 function nextUid(){ return store.items.reduce((m, i) => Math.max(m, +i.id || 0), 199) + 1; }
@@ -365,6 +370,7 @@ function hydrate(){
   if (!data || !Array.isArray(data.items)) return false;
   store.items = data.items;
   store.deleted = Array.isArray(data.deleted) ? data.deleted : [];
+  store.dayViews = (data.dayViews && typeof data.dayViews === "object") ? data.dayViews : {};
   uid = (typeof data.uid === "number" && data.uid > 200) ? data.uid : nextUid();
   return true;                                       // key existed: do NOT re-seed
 }
@@ -585,39 +591,70 @@ function saveTime(id){
 }
 function clearTime(id){ const it = store.items.find(i => i.id === id); if (it){ it.time = null; render(); } }
 
-/* ============================ the day bar ============================ */
-function daybarHTML(opts){
+/* ==================== the day as a vertical run of hours ====================
+   Show-only. It renders where tasks sit; it never creates, never places, and
+   never files. Every task shown here went through the Inbox to get its date —
+   byTab("today") only returns things with when === "today" — so there is no way
+   to make a task that lives only on the clock.
+
+   No duration: tasks stack inside their hour and the row grows to fit. A row
+   height therefore says nothing about how long anything takes. The old bar drew
+   blocks and lied about it.
+
+   No now-line and no percentage. NOW is still a frozen constant (9.75), so a
+   "now" marker would be a clock that never moves, and a percentage is a claim
+   about the day that the old bar contradicted itself on. Counts only, and they
+   reconcile exactly with the list underneath them.
+
+   One card component: these are cardHTML() calls, the same ones the Today list
+   used, so complete/file/time all resolve to the one delegated handler and the
+   one undo stack. Completion is an action on the thing, not on its position. */
+const TL_START = 6, TL_END = 24;
+function timelineHTML(){
   const all = todayItems();
-  const timed = all.filter(i => i.time !== null);
-  const untimed = all.filter(i => !i.done && i.time === null);
+  const open = byTab("today");
+  const timed = open.filter(i => i.time !== null);
+  const untimed = open.filter(i => i.time === null);
   const closed = all.filter(i => i.done).length;
-  const span = DBAR_B - DBAR_A;
-  const pos = t => ((t - DBAR_A) / span) * 100;
 
   let hours = "";
-  for (let h = 6; h <= 23; h++){
-    const major = (h % 6 === 0);
-    hours += `<div class="hourline${major ? " major" : ""}" style="left:${pos(h)}%"></div>`;
+  for (let h = TL_START; h < TL_END; h++){
+    const inHour = timed.filter(i => Math.floor(i.time) === h)
+                        .sort((a,b) => a.time - b.time);
+    hours += `<div class="tl-hour${inHour.length ? " on" : ""}">
+      <div class="tl-lab">${String(h).padStart(2,"0")}:00</div>
+      <div class="tl-slot">${inHour.map(i => cardHTML(i, { time:true })).join("")}</div>
+    </div>`;
   }
-  const marks = timed.map(i =>
-    `<div class="mark${i.done ? " done" : ""}" style="left:${pos(i.time)}%" data-act="time" data-id="${i.id}"
-      title="${esc(i.text)}"></div>`).join("");
 
-  return `<div class="daybar-wrap">
-    <div class="daybar-head">
-      <span class="p">${closed} of ${all.length} closed · ${all.length ? Math.round(closed / all.length * 100) : 0}% of the day</span>
-      <span class="s">${timed.length} placed${untimed.length ? " · " + untimed.length + " with no time" : ""}</span>
+  const none = untimed.length ? `
+    <div class="tl-none">
+      <div class="section-label">No time yet <em>${untimed.length}</em></div>
+      <p class="tl-note">Not on the clock, and not going on it by themselves. They stay here until you
+         give them a time.</p>
+      ${untimed.map(i => cardHTML(i, { time:true })).join("")}
+    </div>` : "";
+
+  return `<div class="tl">
+      <div class="tl-head">
+        <span class="p">${closed} closed</span>
+        <span class="s">${timed.length} placed${untimed.length ? " · " + untimed.length + " with no time" : ""}</span>
+      </div>
+      ${hours}
     </div>
-    <div class="daybar">
-      ${hours}${marks}
-      <div class="nowline" style="left:${pos(NOW)}%"></div>
-    </div>
-    <div class="lbls"><span>06</span><span>12</span><span>18</span><span>23</span></div>
-    <div class="daybar-foot">
-      <span>${opts && opts.nowLabel ? "Now " + fmt(NOW) : "Tap a marker to move that task"}</span>
-      <span><b>${all.filter(i => !i.done).length}</b> left today</span>
-    </div>
-  </div>`;
+    ${none}`;
+}
+
+/* Opening the day view is the thing the gate needs to see. Logged by DATE so
+   absence of data is visible rather than silent — this records that the owner
+   looked, and answers nothing on their behalf. */
+function todayKey(){
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function logDayView(){
+  const k = todayKey();
+  store.dayViews[k] = (store.dayViews[k] || 0) + 1;
 }
 
 /* ============================ templates ============================ */
@@ -701,19 +738,6 @@ function sheetHTML(){
   </div>`;
 }
 
-function todayBody(){
-  const all = byTab("today");
-  if (!all.length) return `<div class="empty">Nothing left for today.<br>File something out of the inbox, or tap + to add.</div>`;
-  const timed = all.filter(i => i.time !== null).sort((a,b) => a.time - b.time);
-  const untimed = all.filter(i => i.time === null);
-  let out = "";
-  if (timed.length) out += `<div class="section-label">Placed <em>${timed.length}</em></div>` +
-    timed.map(i => cardHTML(i, { time:true })).join("");
-  if (untimed.length) out += `<div class="section-label">No time yet <em>${untimed.length}</em></div>` +
-    untimed.map(i => cardHTML(i, { time:true })).join("");
-  return out;
-}
-
 function phoneHTML(){
   const tab = store.tab;
   const tabs = [["inbox","Inbox",inboxCount()],["today","Today",todayCount()],
@@ -726,7 +750,7 @@ function phoneHTML(){
 
   let body;
   if (tab === "today"){
-    body = daybarHTML({ nowLabel:true }) + todayBody();
+    body = timelineHTML();
   } else if (tab === "inbox"){
     const list = inboxRest();
     body = carriedHTML() + (list.length
@@ -777,7 +801,7 @@ function deskHTML(){
                  done:["Done","Closed out."] }[tab];
 
   let body;
-  if (tab === "today") body = daybarHTML({ nowLabel:true }) + todayBody();
+  if (tab === "today") body = timelineHTML();
   else if (tab === "inbox") body = carriedHTML() + inboxRest().map(i => cardHTML(i, { triage:true, showAdded:true })).join("");
   else if (tab === "later") body = ["tomorrow","week","someday"].map(g => {
            const items = byTab("later").filter(i => i.when === g);
@@ -814,7 +838,6 @@ function deskHTML(){
         <h3>Today</h3>
         <p class="sub">${closed} of ${all.length} closed</p>
         <div class="progress"><i style="width:${pct}%"></i></div>
-        ${daybarHTML({ nowLabel:false })}
         ${carried ? `<div style="height:6px"></div>
           <h3>Carried longest</h3>
           <p class="sub">${carried.days} days in the inbox</p>
@@ -877,7 +900,9 @@ document.addEventListener("click", e => {
   if (act === "time") openTime(id);
   if (act === "timesave") saveTime(id);
   if (act === "timeclear") clearTime(id);
-  if (act === "tab"){ store.tab = btn.dataset.tab; renderPhone(); }
+  if (act === "tab"){ store.tab = btn.dataset.tab;
+                   if (store.tab === "today") logDayView();   // an OPEN, not every render
+                   renderPhone(); }
   if (act === "dtab"){ store.tabDesktop = btn.dataset.tab; render(); }
 });
 
