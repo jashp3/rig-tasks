@@ -536,7 +536,11 @@ function undoLast(){
     toast("Restored");
   } else {
     const it = store.items.find(i => i.id === e.id);
-    if (it) it.done = !it.done;                  // flip back the way it was
+    /* Restore the recorded prior state, never a blind flip. complete() defers
+       its write by 280ms, so an Undo landing inside that window would otherwise
+       flip a still-open task to done and complete the very thing the owner just
+       un-completed. */
+    if (it) it.done = e.wasDone;
     toast(it && it.done ? "Completed again" : "Back in the list");
   }
   render();
