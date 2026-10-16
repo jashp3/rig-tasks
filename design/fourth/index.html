@@ -346,6 +346,12 @@ const carriedLongest = () => {
   const pool = store.items.filter(i => i.when === null && !i.done && i.days > 0);
   return pool.length ? pool.reduce((a,b) => (b.days > a.days ? b : a)) : null;
 };
+/* The carried item is shown *pinned above* the inbox, so it must not also be
+   listed in place — otherwise the same task reads as two. */
+const inboxRest = () => {
+  const c = carriedLongest();
+  return byTab("inbox").filter(i => !c || i.id !== c.id);
+};
 
 /* ============================ parsing ============================ */
 function parseTime(str){
@@ -611,10 +617,12 @@ function phoneHTML(){
   if (tab === "today"){
     body = daybarHTML({ nowLabel:true }) + todayBody();
   } else if (tab === "inbox"){
-    const list = byTab("inbox");
+    const list = inboxRest();
     body = carriedHTML() + (list.length
       ? list.map(i => cardHTML(i, { triage:true, showAdded:true })).join("")
-      : `<div class="empty">Inbox is empty.<br>Everything is out of your head and filed somewhere.</div>`);
+      : carriedLongest()
+        ? ""  /* the pinned card is the only thing left; not an empty inbox */
+        : `<div class="empty">Inbox is empty.<br>Everything is out of your head and filed somewhere.</div>`);
   } else if (tab === "later"){
     const list = byTab("later");
     body = list.length
@@ -658,7 +666,7 @@ function deskHTML(){
 
   let body;
   if (tab === "today") body = daybarHTML({ nowLabel:true }) + todayBody();
-  else if (tab === "inbox") body = carriedHTML() + byTab("inbox").map(i => cardHTML(i, { triage:true, showAdded:true })).join("");
+  else if (tab === "inbox") body = carriedHTML() + inboxRest().map(i => cardHTML(i, { triage:true, showAdded:true })).join("");
   else if (tab === "later") body = ["tomorrow","week","someday"].map(g => {
            const items = byTab("later").filter(i => i.when === g);
            return items.length ? `<div class="section-label">${whenLabel[g]}</div>` +
@@ -670,6 +678,7 @@ function deskHTML(){
   const closed = all.filter(i => i.done).length;
   const pct = all.length ? Math.round(closed / all.length * 100) : 0;
   const carried = carriedLongest();
+  const rest = inboxRest();
 
   return `<div class="rail">
       <div class="brand">Inb<span>o</span>x</div>
@@ -702,8 +711,8 @@ function deskHTML(){
           </div>` : ""}
         <div style="height:6px"></div>
         <h3>Still in the inbox</h3>
-        <p class="sub">${inboxCount()} waiting on a decision from you</p>
-        ${store.items.filter(i => i.when === null && !i.done).slice(0,3)
+        <p class="sub">${rest.length} waiting on a decision from you</p>
+        ${rest.slice(0,3)
           .map(i => cardHTML(i, { noCtx:true })).join("") || `<div class="empty" style="padding:16px 8px">Inbox clear.</div>`}
       </div>
     </div>

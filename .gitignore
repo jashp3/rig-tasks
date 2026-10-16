@@ -13,6 +13,10 @@
 .agents/
 .claude/
 .codex/
+# Rig-managed culture blocks, rewritten in place by the runtime (the churn was
+# pure trailing-whitespace). Regenerated locally; not product source.
+AGENTS.md
+CLAUDE.md
 
 # Dependencies and build output
 node_modules/
