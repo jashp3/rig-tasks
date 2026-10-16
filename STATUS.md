@@ -84,6 +84,13 @@ Owner spotted bug 4 by eye before the lead did.
 
 ## Sequencing agreed with the advisor
 
+**Standing instruction from the owner: check with the advisor whenever the lead
+is not sure about anything.** Durable, and it outranks momentum.
+
+The owner, on open product questions: *"I do not know too, we can figure out by
+experiancing it."* Do not guess a preference and build it. Where the owner is
+genuinely unsure, prefer the smallest build that lets experience answer it.
+
 0. **Persistence + delete** on the deployed prototype. Gate: 10 real captures
    survive a refresh, nothing silently discarded.
 1. **Undo on file and delete**, together. Gate: file then undo returns the item
@@ -102,6 +109,17 @@ a two-day-old pin reads as nagging rather than signal.
 
 Cutting the day bar is cheap to add back on real data. The spine and the pin are
 not cheap to swap once habits form around them.
+
+## Reversed: the day view is coming back
+
+The owner asked for it back explicitly, as a **vertical timeline of hours** like
+the "now" direction. That is not the horizontal day bar Direction 4 had. The
+advisor and both reviewers advised cutting it, and the lead agreed. The owner
+overruled all of us by using the app, which is a better basis than any review.
+
+Open question, deliberately unanswered: should the timeline **create** by tapping
+an empty hour, or only **show** where tasks sit. The owner does not know and
+wants to experience it. Do not guess.
 
 ## Once a direction is chosen
 

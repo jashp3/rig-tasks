@@ -189,6 +189,19 @@
          padding:9px 15px;border-radius:22px;font-size:12.5px;font-weight:600;opacity:0;transition:.25s;
          pointer-events:none;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.3);}
   .toast.show{opacity:1;transform:translate(-50%,0);}
+  /* delete affordance — sits in the card's meta row, muted, so it reads as part
+     of the card rather than a new surface. Recovery is the undo bar below. */
+  .del{margin-left:auto;padding:3px 8px;border-radius:20px;border:1px solid transparent;background:none;
+       font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer;}
+  .del:hover{color:#b4482f;border-color:#e8cfc4;background:#fdf7f4;}
+  .undobar{position:absolute;left:50%;bottom:92px;transform:translate(-50%,14px);z-index:21;background:#15171c;
+           color:#fff;padding:10px 12px 10px 15px;border-radius:24px;font-size:12.5px;font-weight:600;
+           display:flex;align-items:center;gap:10px;max-width:88%;box-shadow:0 6px 20px rgba(0,0,0,.3);}
+  .undobar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .undobar button{border:none;border-radius:16px;padding:6px 12px;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .undobar .u{background:#fff;color:#15171c;}
+  .undobar .ux{background:none;color:#9aa1ae;padding:6px 8px;}
+  .undobar .ux:hover{color:#fff;}
   .confetti{position:absolute;inset:0;pointer-events:none;z-index:15;}
   .confetti i{position:absolute;width:7px;height:7px;border-radius:2px;animation:burst .7s ease-out forwards;}
   @keyframes burst{from{transform:translate(0,0) rotate(0);opacity:1;}
@@ -269,9 +282,7 @@
 
   <div class="controls">
     <div class="seg" id="viewseg">
-      <button data-view="phone" aria-pressed="false">Phone</button>
-      <button data-view="desktop" aria-pressed="false">Desktop</button>
-      <button data-view="both" aria-pressed="true">Both</button>
+      <button data-view="phone" aria-pressed="true">Phone</button>
     </div>
     <button class="toggle" id="celebrate" data-act="celebrate" aria-pressed="true">Completion effect: <b>ON</b></button>
     <button class="play" id="play">▶ Play the 3 flows</button>
@@ -326,8 +337,37 @@ const store = {
     { id:19, text:"Finish the expense form for the trip",        when:"week",   time:null, days:0,  lines:[], done:false, at:"Sun" }
   ],
   sheetOpen:false, draft:"", quick:undefined, toast:"", confettiAt:null, celebrate:true,
-  ctxEdit:null, ctxDraft:"", timeEdit:null, timeDraft:""
+  ctxEdit:null, ctxDraft:"", timeEdit:null, timeDraft:"",
+  deleted:[]
 };
+
+/* ============================ persistence ============================
+   The prototype used to hold a hardcoded fixture and lose every capture on
+   refresh. Everything the owner creates is written to localStorage on every
+   mutation and read back on load. The fixture seeds ONLY a first-time visitor;
+   once a key exists it is never re-seeded, so an owner who has deleted
+   everything still sees an empty app rather than the demo data coming back.
+   Every access is guarded: a browser that refuses storage must still run the
+   app, just without persistence. */
+const LS_KEY = "tasks.d4.v1";
+function persist(){
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({ v:1, uid:uid, items:store.items, deleted:store.deleted }));
+  } catch (e) { /* storage full or refused — the app still works, it just forgets */ }
+}
+function nextUid(){ return store.items.reduce((m, i) => Math.max(m, +i.id || 0), 199) + 1; }
+function hydrate(){
+  let raw = null;
+  try { raw = localStorage.getItem(LS_KEY); } catch (e) { return false; }
+  if (raw === null) return false;                    // never seen this app: seed the fixture
+  let data;
+  try { data = JSON.parse(raw); } catch (e) { return false; }
+  if (!data || !Array.isArray(data.items)) return false;
+  store.items = data.items;
+  store.deleted = Array.isArray(data.deleted) ? data.deleted : [];
+  uid = (typeof data.uid === "number" && data.uid > 200) ? data.uid : nextUid();
+  return true;                                       // key existed: do NOT re-seed
+}
 
 function byTab(tab){
   if (tab === "inbox") return store.items.filter(i => i.when === null && !i.done);
@@ -431,11 +471,24 @@ const ICON = {
 
 function toast(msg){ store.toast = msg; render(); sleep(1700).then(() => { if (store.toast === msg){ store.toast = ""; render(); } }); }
 
+/* Tapping the tick toggles. The way back is the same tap, and the way back from
+   a *mistaken* tap is the shared undo bar — the same mechanism delete uses, not a
+   second pattern. The 280ms leave animation is why the undo entry is claimed by
+   identity below: if the owner undoes inside that window, the pending write is
+   skipped rather than landing after the undo and re-completing the task. */
 function complete(id, host){
   const it = store.items.find(i => i.id === id); if (!it) return;
+  if (it.done){                                  // already finished — bring it back
+    pushUndo({ kind:"complete", id:id, text:it.text, wasDone:true });
+    it.done = false; render(); toast("Back in the list"); return;
+  }
+  const entry = pushUndo({ kind:"complete", id:id, text:it.text, wasDone:false });
   const card = host.querySelector('[data-card="'+id+'"]');
   if (card){ card.classList.add("leaving"); burst(host, card, id); }
-  sleep(280).then(() => { it.done = true; render(); toast(it.text.length > 26 ? it.text.slice(0,24)+"…" : it.text); });
+  sleep(280).then(() => {
+    if (store.deleted.indexOf(entry) < 0) return;   // undone during the animation
+    it.done = true; render(); toast(it.text.length > 26 ? it.text.slice(0,24)+"…" : it.text);
+  });
 }
 const reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 function burst(host, card, id){
@@ -457,6 +510,51 @@ function burst(host, card, id){
   sleep(900).then(() => { store.confettiAt = null; box.innerHTML = ""; });
 }
 function file(id, when){ const it = store.items.find(i => i.id === id); if (!it) return; it.when = when; render(); }
+
+/* One undo stack for the two irreversible-looking actions: delete and complete.
+   The file's own rule is that nothing typed is ever discarded, so neither action
+   destroys anything — each pushes a description of how to reverse itself and the
+   undo bar offers that back. Repeated actions stack, so Undo peels them off one
+   at a time rather than losing all but the last. The stack is persisted too, so
+   a refresh cannot strand a deletion or a completion. Only the explicit ✕ throws
+   it away, and that is the owner's call. */
+function pushUndo(entry){
+  store.deleted.push(entry);
+  if (store.deleted.length > 25) store.deleted.shift();
+  return entry;
+}
+function removeItem(id){
+  const i = store.items.findIndex(x => x.id === id); if (i < 0) return;
+  pushUndo({ kind:"delete", item: store.items[i], index: i, text: store.items[i].text });
+  store.items.splice(i, 1);
+  render();
+}
+function undoLast(){
+  const e = store.deleted.pop(); if (!e) return;
+  if (e.kind === "delete"){
+    store.items.splice(Math.min(e.index, store.items.length), 0, e.item);
+    toast("Restored");
+  } else {
+    const it = store.items.find(i => i.id === e.id);
+    if (it) it.done = !it.done;                  // flip back the way it was
+    toast(it && it.done ? "Completed again" : "Back in the list");
+  }
+  render();
+}
+function dismissDeleted(){ if (!store.deleted.length) return; store.deleted = []; render(); }
+function undoBarHTML(){
+  const n = store.deleted.length;
+  if (!n) return "";
+  const e = store.deleted[n-1];
+  const t = e.text || "";
+  const label = t.length > 30 ? t.slice(0,28) + "…" : t;
+  const verb = e.kind === "delete" ? "Deleted" : (e.wasDone ? "Reopened" : "Completed");
+  return `<div class="undobar">
+      <span>${verb} &ldquo;${esc(label)}&rdquo;${n > 1 ? ` &middot; ${n} to undo` : ""}</span>
+      <button class="u" data-act="undo">Undo</button>
+      <button class="ux" data-act="undodismiss" aria-label="Dismiss undo history">&times;</button>
+    </div>`;
+}
 
 function openCtx(id){ store.ctxEdit = id; store.ctxDraft = ""; render();
   const el = document.getElementById("cx-" + id); if (el) el.focus(); }
@@ -565,10 +663,19 @@ function cardHTML(it, opts){
         : `<button class="cxadd" data-act="ctx" data-id="${it.id}">${lines.length ? "add another line" : "add what you know"}</button>`}
     </div>`;
 
+  /* Every card the owner can act on offers a delete, so the meta row has to
+     render even when there are no chips — an undated completed task has none.
+     The compact aside summary is the one place it is left off; those items are
+     deletable from the inbox itself. */
+  const showDel = !opts.noCtx;
+  const metaRow = (meta.length || showDel)
+    ? `<div class="meta">${meta.join("")}${showDel ? `<button class="del" data-act="del" data-id="${it.id}" aria-label="Delete ${esc(it.text)}">Delete</button>` : ""}</div>`
+    : "";
+
   return `<div class="card${it.done ? " done" : ""}" data-card="${it.id}">
       <span class="check" data-act="complete" data-id="${it.id}" role="button" aria-label="Complete">${CHECK}</span>
       <div class="text">${esc(it.text)}</div>
-      ${meta.length ? `<div class="meta">${meta.join("")}</div>` : ""}
+      ${metaRow}
       ${context}
       ${triage}
     </div>`;
@@ -652,7 +759,8 @@ function phoneHTML(){
     </div>
     <button class="fab" data-act="open" aria-label="New task">${ICON.plus}</button>
     ${sheetHTML()}
-    <div class="toast${store.toast ? " show" : ""}">✓ ${esc(store.toast)}</div>`;
+    <div class="toast${store.toast ? " show" : ""}">✓ ${esc(store.toast)}</div>
+    ${undoBarHTML()}`;
 }
 
 function deskHTML(){
@@ -716,13 +824,18 @@ function deskHTML(){
           .map(i => cardHTML(i, { noCtx:true })).join("") || `<div class="empty" style="padding:16px 8px">Inbox clear.</div>`}
       </div>
     </div>
-    <div class="toast${store.toast ? " show" : ""}" style="bottom:26px">✓ ${esc(store.toast)}</div>`;
+    <div class="toast${store.toast ? " show" : ""}" style="bottom:26px">✓ ${esc(store.toast)}</div>
+    <div style="position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center">${undoBarHTML()}</div>`;
 }
 
-/* ============================ render + bind ============================ */
-function render(){ document.getElementById("phone").innerHTML = phoneHTML();
+/* ============================ render + bind ============================
+   Both renderers end in persist(). Every mutation in this file — capture,
+   complete, file, context, time, delete — already calls one of these two, so
+   this is the single choke point where "on every mutation" is actually true. */
+function render(){ persist();
+                  document.getElementById("phone").innerHTML = phoneHTML();
                   document.getElementById("desktop").innerHTML = deskHTML(); }
-function renderPhone(){ document.getElementById("phone").innerHTML = phoneHTML(); }
+function renderPhone(){ persist(); document.getElementById("phone").innerHTML = phoneHTML(); }
 
 document.addEventListener("click", e => {
   const vb = e.target.closest("#viewseg button");
@@ -752,6 +865,9 @@ document.addEventListener("click", e => {
   }
   if (act === "complete") complete(id, host);
   if (act === "file") file(id, btn.dataset.when);
+  if (act === "del") removeItem(id);
+  if (act === "undo") undoLast();
+  if (act === "undodismiss") dismissDeleted();
   if (act === "ctx") openCtx(id);
   if (act === "ctxsave") saveCtx(id);
   if (act === "time") openTime(id);
@@ -823,7 +939,13 @@ function fitStage(){
     inner.style.transform = "scale(" + s + ")";
   });
 }
-function setView(v){
+/* Mobile first. The owner is choosing the phone layout and nothing else, so the
+   view is no longer a choice: setView() clamps to phone whatever it is handed.
+   That covers every path into it — the seg buttons, the fitStage legibility
+   guard, the bootstrap — so no width and no stale state can surface the desktop
+   frame again. The frame stays in the DOM, hidden by the existing CSS rule. */
+function setView(){
+  const v = "phone";
   store.view = v;
   document.body.dataset.view = v;
   [...document.querySelectorAll("#viewseg button")].forEach(b => b.setAttribute("aria-pressed", b.dataset.view === v));
@@ -879,6 +1001,9 @@ async function runDemo(){
 }
 document.getElementById("play").addEventListener("click", runDemo);
 
+/* Hydrate BEFORE the first render. render() persists, so rendering first would
+   write the fixture straight back over whatever the owner had stored. */
+hydrate();
 render();
 fitStage();
 window.addEventListener("load", fitStage);
