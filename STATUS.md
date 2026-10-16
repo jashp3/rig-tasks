@@ -70,17 +70,54 @@ Owner spotted bug 4 by eye before the lead did.
 
 ## Verified gaps nobody caught until late (advisor, confirmed by lead)
 
+**STATUS: 2 and 3 are FIXED. Only 1 remains open.**
+
 1. **The pin cannot fire on real data.** `carriedLongest()` filters
    `days > 0`; `addItem()` hardcodes `days: 0`; nothing anywhere assigns
    `.days`. No Date, no rollover. Every captured task is born at 0 and stays
    0. The "23 days" the owner liked was seed data behaving as authored.
-2. **There is no delete.** No remove, no trash. With "nothing typed is ever
-   discarded" as a rule plus a real database, the dataset would be
-   append-only and unerasable.
-3. **There is no persistence.** No localStorage, no fetch, no XHR. State is a
-   hardcoded fixture; a refresh loses everything. **The owner has never
-   captured a real task, so every judgement to date — including choosing
-   Direction 4 — is about 19 invented items.**
+2. **~~There is no delete.~~ FIXED.** Delete with a stacked, persisted undo
+   bar that restores the item at its original index.
+3. **~~There is no persistence.~~ FIXED.** Store, uid and undo stack persist
+   to localStorage under `tasks.d4.v1`. Hydrate runs before first render;
+   seeds only when the key is absent.
+
+## Shipped since the reviews
+
+- **Vertical day timeline**, show-only, mobile. Hours 06:00-23:00 down the
+  page, rendering the same task card so completion stays one handler and one
+  undo stack. Verified: completing from the clock and from the no-time group
+  each push exactly one entry to the same stack, with no duplication.
+- **complete() is a toggle** and shares the delete undo mechanism. Restores
+  recorded prior state, not a blind flip.
+- **Mobile only** at every width.
+- **The horizontal day bar is CUT.** The owner liked it; it was cut because its
+  marks were a second listing of the same tasks beside the timeline, which is
+  the two-surface rule verbatim. A reconciling count header survives. It can
+  come back as decoration, never as a task surface.
+- **Gate logging exists.** Opening the day view increments `store.dayViews`
+  keyed by real date, persisted. The timeline gate can now close itself on
+  evidence rather than on hope.
+
+## Older gaps, for the record
+
+- **There was no delete and no persistence** when the reviews were written.
+   Both listed above as fixed; kept here so a cold-start reader knows these
+   were real and were closed, not invented.
+- **There is still no server.** Everything is on one device. Losing that
+   browser loses the data. This is what slice 0 solves, and it is also why
+   automatic usage collection is not being built.
+
+## Closed, kept for the record
+
+These were real when written and are fixed now. Kept so a cold-start reader
+knows they were found, not invented.
+
+- **There was no delete** - the dataset would have been append-only and
+  unerasable, against the "nothing typed is ever discarded" rule. Now fixed.
+- **There was no persistence** - a refresh lost everything, so every judgement
+  to date, including choosing Direction 4, was about 19 invented items rather
+  than the owner's own tasks. Now fixed.
 
 ## Sequencing agreed with the advisor
 
