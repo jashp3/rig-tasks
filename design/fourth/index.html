@@ -86,6 +86,8 @@
          transition:transform .15s,background .15s,border-color .15s;}
   .check::before{content:"";position:absolute;inset:-9px;border-radius:50%;}
   .check svg{width:13px;height:13px;}
+  /* a finished task must LOOK finished — the empty circle read as an unselected radio */
+  .card.done .check{background:var(--done); border-color:var(--done); color:#fff;}
   .card.done .text{color:#9aa1ae;text-decoration:line-through;}
   .triage{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
   .triage button{flex:1;padding:7px 0;border-radius:8px;background:#f5f6f9;font-size:11.5px;font-weight:600;color:#4c5361;}
@@ -229,6 +231,14 @@
     .chrome{padding-top:16px;}
     .chrome .thesis, .grafts, .hint{display:none;}
   }
+  .toggle{padding:9px 14px; border-radius:9px; background:#fff; border:1px solid var(--line);
+           font-size:13px; font-weight:600; color:#4c5361;}
+  .toggle b{color:var(--ink);}
+  .toggle[aria-pressed="false"]{background:#f1f3f7; color:#8b91a0;}
+  /* honour the OS setting: motion off means no particles, instant state change */
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important; transition-duration:.001ms !important;}
+  }
 </style>
 </head>
 <body data-view="both">
@@ -263,6 +273,7 @@
       <button data-view="desktop" aria-pressed="false">Desktop</button>
       <button data-view="both" aria-pressed="true">Both</button>
     </div>
+    <button class="toggle" id="celebrate" data-act="celebrate" aria-pressed="true">Completion effect: <b>ON</b></button>
     <button class="play" id="play">▶ Play the 3 flows</button>
   </div>
   <p class="hint">Times are entirely optional and off by default — filing stays four taps and no clock. Type a
@@ -314,7 +325,7 @@ const store = {
     { id:18, text:"Read the two articles Sam sent",              when:"someday",time:null, days:12, lines:[], done:false, at:"yesterday" },
     { id:19, text:"Finish the expense form for the trip",        when:"week",   time:null, days:0,  lines:[], done:false, at:"Sun" }
   ],
-  sheetOpen:false, draft:"", quick:undefined, toast:"", confettiAt:null,
+  sheetOpen:false, draft:"", quick:undefined, toast:"", confettiAt:null, celebrate:true,
   ctxEdit:null, ctxDraft:"", timeEdit:null, timeDraft:""
 };
 
@@ -420,8 +431,9 @@ function complete(id, host){
   if (card){ card.classList.add("leaving"); burst(host, card, id); }
   sleep(280).then(() => { it.done = true; render(); toast(it.text.length > 26 ? it.text.slice(0,24)+"…" : it.text); });
 }
+const reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 function burst(host, card, id){
-  if (!card || store.confettiAt) return;
+  if (!card || store.confettiAt || !store.celebrate || reduceMotion) return;
   const r = card.getBoundingClientRect(), h = host.getBoundingClientRect();
   const cx = r.left - h.left + 30, cy = r.top - h.top + 24;
   const box = host.querySelector(".confetti") || (() => {
@@ -710,6 +722,11 @@ document.addEventListener("click", e => {
   if (!btn) return;
   const act = btn.dataset.act, id = +btn.dataset.id, host = btn.closest(".frame");
 
+  if (act === "celebrate"){ store.celebrate = !store.celebrate;
+      const t = document.getElementById("celebrate");
+      t.setAttribute("aria-pressed", String(store.celebrate));
+      t.innerHTML = "Completion effect: <b>" + (store.celebrate ? "ON" : "OFF") + "</b>";
+      toast(store.celebrate ? "Completion effect on" : "Completion effect off"); return; }
   if (act === "open"){ store.sheetOpen = true; store.draft = ""; store.quick = undefined; renderPhone();
                        setTimeout(() => { const ta = document.getElementById("ta"); if (ta) ta.focus(); }, 60); }
   if (act === "close"){ store.sheetOpen = false; renderPhone(); }
