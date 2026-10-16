@@ -143,15 +143,26 @@ leaves them wanting to place from the timeline.
 
 - Create tasks that live only on the clock. Later placement must land in Inbox.
 - Auto-place or default a time. Blank stays blank.
-- Own its own complete control - that would give completion a second surface.
+- Own a second completion **handler or undo history**. The test is not "is there
+  a second control" but "is there a second handler". The timeline must render the
+  same task card, so completion is one control in two positions. Completion is an
+  action on the thing, not on its position.
 - Carry duration, overlap, or a percentage that does not reconcile with the
   now-line. The day bar lied by five points.
 - Become a planner: no drag, no reschedule, no next-free-slot suggestion.
 - Own filing. That is Inbox's job.
 
-**Gate:** the owner opens the day view on three separate days with real
-captures, and we either name a moment they reached to place something, or
-confirm they never did.
+**Gate:** one deliberate attempt on a day the owner knows has a gap, plus three
+logged day-view opens. The app logs a day-view open with its date, so absence of
+data is visible rather than silent. One session with intent beats a week of
+ambient behaviour and does not require a habit to form first.
+
+**Expiry:** the day-view shipping date is the named date. If the owner has not
+opened the day view by then, close the question by default: show-only stays,
+create is not built. Absence of reaching is weak evidence, not evidence of
+wanting, and building create on absence would be guessing a preference. On
+expiry the answer resolves to **not-wanted**, so the timeline ships as show-only
+by decision rather than by inertia.
 
 ## Once a direction is chosen
 
