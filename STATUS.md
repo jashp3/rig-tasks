@@ -121,6 +121,38 @@ Open question, deliberately unanswered: should the timeline **create** by tappin
 an empty hour, or only **show** where tasks sit. The owner does not know and
 wants to experience it. Do not guess.
 
+**Cut by review 2026-10-16, reinstated by owner use the same week.** Owner
+evidence outranks review evidence here. Do not re-run this argument.
+
+**Not a synthesis any more.** A vertical hour timeline borrowed from "now" is
+returning, so the synthesis framing no longer describes the thing. When the
+current slice lands, stop calling it Direction 4 - it becomes the app.
+
+## Timeline slice: scope decided, question deferred to experience
+
+**Show-only first.** Not because it is reversible, but because tap-to-create in
+the "now" code requires a duration (30/60/120 chips) and auto-places at the next
+free slot. Building it would pick duration and auto-placement before the
+experiment could run, and both violate settled decisions.
+
+Show-only is not blind: cards already carry a Set-time control, so the owner can
+place an item today. The learnable question is whether placing from the card
+leaves them wanting to place from the timeline.
+
+**What the timeline must NOT do:**
+
+- Create tasks that live only on the clock. Later placement must land in Inbox.
+- Auto-place or default a time. Blank stays blank.
+- Own its own complete control - that would give completion a second surface.
+- Carry duration, overlap, or a percentage that does not reconcile with the
+  now-line. The day bar lied by five points.
+- Become a planner: no drag, no reschedule, no next-free-slot suggestion.
+- Own filing. That is Inbox's job.
+
+**Gate:** the owner opens the day view on three separate days with real
+captures, and we either name a moment they reached to place something, or
+confirm they never did.
+
 ## Once a direction is chosen
 
 Slice 0 is not "write the app". It is **foundation and reachability**: migrations

@@ -254,7 +254,7 @@
   }
 </style>
 </head>
-<body data-view="both">
+<body data-view="phone">
 
 <div class="chrome">
   <h1>Direction 4 — Inbox, plus the two things that survived</h1>
@@ -825,7 +825,7 @@ function deskHTML(){
       </div>
     </div>
     <div class="toast${store.toast ? " show" : ""}" style="bottom:26px">✓ ${esc(store.toast)}</div>
-    <div style="position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center">${undoBarHTML()}</div>`;
+    ${undoBarHTML()}`;
 }
 
 /* ============================ render + bind ============================
@@ -1007,10 +1007,11 @@ hydrate();
 render();
 fitStage();
 window.addEventListener("load", fitStage);
-// No magic width. Start on Both and let the legibility guard in fitStage() decide
-// from the actual geometry — it demotes to the phone view only when two frames
-// would each shrink past legibility. One rule instead of two that can disagree.
-setView("both");
+// No magic width, and no view choice either. setView() clamps to phone, so the
+// layout is decided by the owner's decision rather than by the window or by the
+// legibility guard in fitStage(). That guard still runs — it is what scales the
+// single frame — but it can no longer change which frame is shown.
+setView();
 </script>
 </body>
 </html>
